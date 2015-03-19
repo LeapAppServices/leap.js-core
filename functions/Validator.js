@@ -9,14 +9,14 @@ define(
     function (AppCube, UI, validateConfig,$, _) {
         function Rules(configs) {
             this.__config = configs;
-            this.execute = function (value) {
+            this.execute = function (value,$el,options) {
                 var SUCCESS = {result: true, msg: 'success'};
                 var ERROR = {result: false, msg: this.__config.msg};
 
                 var rules = this.__config.rules;
 
                 for (var i in rules) {
-                    var r = rules[i].execute(value);
+                    var r = rules[i].execute(value,$el,options);
                     if (!r.result) {
                         return r;
                     }
@@ -29,7 +29,7 @@ define(
 
                 var validator = this.__config.validator;
                 if (validator && typeof validator == 'function') {
-                    if (!validator(value)) {
+                    if (!validator(value,$el,options)) {
                         return ERROR;
                     }
                 }
@@ -84,20 +84,24 @@ define(
             });
         };
 
-        Validator.prototype.validate = function ($el) {
-            if (!_.isArray($el)) {
+        Validator.prototype.validate = function ($el,options) {
+            if ($el.length === 1) {
                 /\s?validate-(\w+)\s?/.test($el.attr('class'));
                 var reg1 = RegExp.$1;
                 var tmp = {};
-                if (reg1 && this.__rules[reg1]) {
-                    tmp = this.__rules[reg1].execute($el.val());
-                } else {
-                    var validator = $el.attr('data-validator');
-                    if (validator) {
-                        console.log(typeof validator);
-                    } else {
-                        throw new Error('No validator matched!!!');
+                var value;
+                try{
+                    if($el.is('.select2-parts')){
+                        value = $el.dropdown2('get value');
+                    }else if($el.is('.ui.dropdown')){
+                        value = $el.dropdown('get value');
+                    }else if($el.is('input,textarea,select')){
+                        value = $el.val();
                     }
+                }catch(e){}
+
+                if (reg1 && this.__rules[reg1]) {
+                    tmp = this.__rules[reg1].execute(value,$el,options);
                 }
 
                 if (tmp.result == true) {

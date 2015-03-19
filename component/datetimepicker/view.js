@@ -13,8 +13,8 @@ define(
 
         return Marionette.ItemView.extend({
             beforeShow: function () {
-                var eventName = this.options.valueEventName ? ':' + this.options.valueEventName : '';
-                Dispatcher.on('Request.getValue' + eventName, this.getValue, this, 'Component');
+                var eventName = this.options.valueEventName;
+                Dispatcher.on('Request.getValue:' + eventName, this.getValue, this, 'Component');
             },
             renderTimePicker: function () {
                 var self = this;
@@ -32,7 +32,7 @@ define(
                 startDate = moment().subtract(-(this.options.datetimepicker.start||0),'days');
                 this.$('.datetimepicker-parts>span').text(startDate.format(' MM/DD/YY'));
                 if(this.options.datetimepicker.start){
-                    this.$('.datetimepicker-parts').data('DateTimePicker').setDate(startDate.format('MM/DD/YY'));
+                    this.$('.datetimepicker-parts').data('DateTimePicker').setDate(startDate);
                 }
                 this.$('.datetimepicker-parts').on('dp.change',function(e){
                     self.$('.datetimepicker-parts>span').text(e.date.format(' MM/DD/YY'));
@@ -50,8 +50,8 @@ define(
                 this.renderTimePicker();
             },
             beforeHide: function () {
-                var eventName = this.options.valueEventName ? ':' + this.options.valueEventName : '';
-                Dispatcher.off('Request.getValue' + eventName, 'Component');
+                var eventName = this.options.valueEventName;
+                Dispatcher.off('Request.getValue:' + eventName, 'Component');
                 var calendar = this.$('.datetimepicker-parts').data('DateTimePicker');
                 if(calendar&&this.$('.datetimepicker-parts').is(':visible')){
                     calendar.destroy();

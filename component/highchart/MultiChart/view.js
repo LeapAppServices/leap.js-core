@@ -6,12 +6,11 @@ define(
         'dispatcher',
         'jquery',
         'underscore',
-        'marionette',
-        'moment',
+        'i18n',
         'highcharts',
         'datetimepicker'
     ],
-    function (AppCube, BasicChart, U, Dispatcher, $, _, Marionette,moment) {
+    function (AppCube, BasicChart, U, Dispatcher, $, _, i18n) {
         /**
          * title
          * ranges
@@ -32,8 +31,7 @@ define(
                 "click .btn-group-stats>.btn": "clickStats"
             },
             initChart: function () {
-                //todo
-                var title = this.options.title;
+                var title = this.options.doI18n?i18n.t(this.options.title):this.options.title;
                 this.$('.caption').html('<span class="app-icon app-icon-close"></span>' + title);
                 this.ranges = this.options.ranges;
                 if (this.options.stats_list && this.options.stats_list.length > 0) {
@@ -48,13 +46,15 @@ define(
             renderChart: function (data) {
                 var self = this;
                 var chart = this.$('.chart-content').highcharts();
-                chart.hideLoading();
+                if(!chart)return;
+                this.hideLoading();
                 if (!data.dates || data.dates.length == 0) {
+                    this.showNoData();
                     chart.options.legend.enabled = true;
                     this.clearSeries(chart);
-                    this.showNoData();
                     return;
                 } else {
+                    this.hideNoData();
                     this.clearSeries(chart);
                     //calculate interval
                     var length = _.isArray(data.dates)?data.dates.length:_.values(data.dates).length;

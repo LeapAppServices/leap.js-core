@@ -13,9 +13,19 @@
         </div>
     </div>
     <div class="portlet-body">
-        <div class="table-view" style="min-height:30px;">
-            <div class="table-overlay" style="height:100%;"></div>
-            <div class="no-data-view">No Data To Display</div>
+        <div class="table-view" style="min-height:90px;">
+            <div class="view-placeholder">
+                <div class="no-data-view" style="display:none">
+                    <div class="empty-icon"></div>
+                    <div class="empty-message" data-i18n="common.title.no-data-view"></div>
+                </div>
+
+                <div class="loading-view" style="display:none">
+                    <div class="ui active inverted dimmer">
+                        <div class="ui large text loader" data-i18n="common.title.loading"></div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

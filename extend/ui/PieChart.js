@@ -1,9 +1,9 @@
-define(['jquery','underscore','d3'],function($,_,d3){
+define(['jquery','underscore','d3','i18n'],function($,_,d3,i18n){
     var defaults = {
         innerRadius:40,
         outerRadius:50,
         data:[],
-        text:['Failed','Successed','Scheduled'],
+        text:['notification.tag.fail','notification.tag.success','notification.tag.scheduled'],
         fontsize:14
     };
 
@@ -32,6 +32,16 @@ define(['jquery','underscore','d3'],function($,_,d3){
             .attr("class","pie-graph");
         var info = svg.append("g")
             .attr("class","pie-desc");
+        var percent = Math.round((dataset[1])/(dataset[0]+dataset[1]+dataset[2])*10000)/100;
+
+        graph.append("text")
+            .attr("x",50)
+            .attr("y",56)
+            .text(percent+"%")
+            .attr('text-anchor','middle')
+            .attr('font-family','sans-serif')
+            .attr('font-size','18px');
+
 
         var arcs = graph.selectAll("g")
             .data(pie(dataset))
@@ -54,20 +64,20 @@ define(['jquery','underscore','d3'],function($,_,d3){
 
         desc.append("rect")
             .attr("width",10).attr("height",10)
-            .attr("x",110)
+            .attr("x",120)
             .attr("y",function(d,i){
-                return 5+30*i;
+                return 15+30*i;
             })
             .attr("fill",function(d,i){
                 return color[i]||color(i);
             });
 
         desc.append("text")
-            .attr("x",130)
+            .attr("x",140)
             .attr("y",function(d,i){
-                return 5+30*i+(params.fontsize+10)/2;
+                return 15+30*i+(params.fontsize+10)/2;
             })
-            .text(function(d,i){return d.data+' '+params.text[i];})
+            .text(function(d,i){return d.data+' '+i18n.t(params.text[i]);})
             .attr('text-anchor','start')
             .attr('font-family','sans-serif')
             .attr('font-size',params.fontsize+'px');

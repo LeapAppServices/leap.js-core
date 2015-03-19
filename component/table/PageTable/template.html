@@ -13,21 +13,40 @@
         </div>
     </div>
     <div class="portlet-body">
-        <div class="table-view" style="min-height:30px;">
-            <div class="table-overlay" style="height:100%;"></div>
-            <div class="no-data-view">No Data To Display</div>
+        <div class="table-view" style="min-height:90px;">
+            <div class="view-placeholder">
+                <div class="no-data-view" style="display:none">
+                    <div class="empty-icon"></div>
+                    <div class="empty-message" data-i18n="common.title.no-data-view"></div>
+                </div>
+
+                <div class="loading-view" style="display:none">
+                    <div class="ui active inverted dimmer">
+                        <div class="ui large text loader" data-i18n="common.title.loading"></div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-    <div class="pageinate">
-        <div class="left">
-            <select class="form-control"></select>
+    <div class="pagination">
+        <div class="pull-left">
+            <div class="ui dropdown">
+                <div class="text">Page</div>
+                <i class="dropdown icon"></i>
+                <div class="menu">
+                </div>
+            </div>
         </div>
-        <div class="left page-label">rows/page</div>
-        <div class="right page-btn">
-            <div class="btn btn-default prev disabled"><i class="fa fa-angle-left"></i></div>
+        <div class="pull-left page-label">rows/page</div>
+        <div class="pull-right page-btn">
+            <div class="mini ui icon button prev disabled">
+                <i class="angle left icon"></i>
+            </div>
             <span class="page-status"> 1 - 1 </span>
 
-            <div class="btn btn-default next disabled"><i class="fa fa-angle-right"></i></div>
+            <div class="mini ui icon button next disabled">
+                <i class="angle right icon"></i>
+            </div>
         </div>
     </div>
 </div>

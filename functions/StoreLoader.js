@@ -19,6 +19,9 @@ define([
 
                 if (item.task) {
                     item.taskOptions.url = API.get(item.taskOptions.url);
+                    if(item.taskOptions.queryUrl){
+                        item.taskOptions.queryUrl = API.get(item.taskOptions.queryUrl);
+                    }
                     task = item.task.create(item.taskOptions);
                 } else {
                     task = item.data || {};

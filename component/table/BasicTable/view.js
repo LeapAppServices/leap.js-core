@@ -7,9 +7,10 @@ define(
         'marionette',
         'jquery',
         'underscore',
-        'extend/ui/AdvancedTable'
+        'extend/ui/AdvancedTable',
+        'i18n'
     ],
-    function (AppCube, U, Dispatcher, template, Marionette, $, _, AdvancedTable) {
+    function (AppCube, U, Dispatcher, template, Marionette, $, _, AdvancedTable,i18n) {
 
         return Marionette.ItemView.extend({
             template: template,
@@ -21,14 +22,8 @@ define(
             beforeShow: function () {
             },
             initGrid: function () {
-                var title = this.options.title;
+                var title = this.options.doI18n?i18n.t(this.options.title):this.options.title;
                 this.$('.caption').html('<span class="app-icon app-icon-close"></span>' + title);
-//                if(this.options.noHead == true){
-//                    this.$('.portlet-title').remove();
-//                }
-//                if(this.options.time&&this.options.time.length>0){
-//                    this.initTime(components.time);
-//                }
             },
             renderComponent: function () {
                 var self = this;
@@ -39,28 +34,35 @@ define(
                 });
             },
             showLoading: function () {
-                this.$('.table-overlay').show();
+                this.$('.view-placeholder').addClass('show');
+                this.$('.view-placeholder>.loading-view').show();
             },
             hideLoading: function () {
-                this.$('.table-overlay').hide();
+                this.$('.view-placeholder').removeClass('show');
+                this.$('.view-placeholder>.loading-view').hide();
             },
             showNoData: function () {
-                this.$('.no-data-view').show();
-                this.$('.advanced-table').show();
+                this.$('.view-placeholder').addClass('show relative');
+                this.$('.view-placeholder>.no-data-view').show();
             },
             hideNoData: function () {
-                this.$('.no-data-view').hide();
-                this.$('.advanced-table').hide();
+                this.$('.view-placeholder').removeClass('show relative');
+                this.$('.view-placeholder>.no-data-view').hide();
             },
             renderGrid: function (data) {
                 this.hideLoading();
-                if (!data || data.length == 0)this.showNoData();
+                if (!data || data.length == 0){
+                    this.showNoData();
+                }else{
+                    this.hideNoData();
+                }
                 this.table.render(data, this.options.columns, this.options.options);
             },
             render: function () {
                 Marionette.ItemView.prototype.render.call(this);
                 this.table = new AdvancedTable(this.$('.table-view'), {}, this.options.columns, this.options.options);
                 this.initGrid();
+                this.$el.i18n();
                 if (!this.options.static_data) {
                     this.refresh();
                 } else {
@@ -70,11 +72,10 @@ define(
             refresh: function () {
                 var storeName = this.options.storeName;
                 this.showLoading();
-                this.hideNoData();
                 AppCube.DataRepository.refresh(storeName);
             },
             beforeHide: function () {
-                this.table.destroy();
+                if(this.table)this.table.destroy();
             }
         });
     });

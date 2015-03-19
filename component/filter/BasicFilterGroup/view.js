@@ -5,14 +5,15 @@ define([
     './childView',
     'jquery',
     'marionette',
-    'underscore'
+    'underscore',
+    'i18n'
 ],function(AppCube,U,template,childView,$,Marionette,_){
 
     return Marionette.ItemView.extend({
         template:template,
-        childViewContainer:'.conditions-list',
+        childViewContainer:'.condition-list',
         events:{
-            "click .btn-add-condition":"addItemHandler"
+            "click .add-condition":"addItemHandler"
         },
         beforeShow:function(){
         },
@@ -21,7 +22,6 @@ define([
         initFilter:function(){
             this.childView = this.options.childView||childView;
             this.children = [];
-            //todo
         },
         getChildView:function(){
             return this.childView;
@@ -41,7 +41,7 @@ define([
             var node = document.createElement('div');
             item.setElement(node);
             this.$(this.childViewContainer).append(node);
-            item.$el.addClass('container-flex');
+            item.$el.addClass('fields');
             item._parent = this;
             this.children[item.cid]=item;
             return item;
@@ -72,6 +72,7 @@ define([
         },
         render:function(){
             Marionette.ItemView.prototype.render.call(this);
+            this.$el.i18n();
             this.initFilter();
         }
     });

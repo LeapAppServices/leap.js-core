@@ -16,8 +16,8 @@ define(
         return PageTable.extend({
             template: template,
             events: {
-                'change .pageinate select': 'changePerpage',
-                'click .page-btn>.btn': 'changePage',
+                'click .pagination .menu>.item': 'changePerpage',
+                'click .page-btn>.button': 'changePage',
                 'click th.sortable': 'changeSort',
                 'click .open-subtable': 'openSub',
                 'click .close-subtable': 'closeSub'
@@ -25,21 +25,21 @@ define(
             init: function () {
             },
             beforeShow: function () {
-                var eventName = this.options.valueEventName ? ':' + this.options.valueEventName : '';
-                Dispatcher.on('Request.getValue' + eventName, this.getValue, this, 'Component');
+                var eventName = this.options.valueEventName;
+                Dispatcher.on('Request.getValue:' + eventName, this.getValue, this, 'Component');
                 var storeName = this.options.storeName;
                 Dispatcher.on('refresh:' + storeName, this.refreshHandler, this, 'Component');
                 var subStoreName = this.options.subStoreName;
                 Dispatcher.on('refresh:' + subStoreName, this.renderSubComponent, this, 'Component');
             },
             beforeHide: function () {
-                var eventName = this.options.valueEventName ? ':' + this.options.valueEventName : '';
-                Dispatcher.off('Request.getValue' + eventName, 'Component');
+                var eventName = this.options.valueEventName;
+                Dispatcher.off('Request.getValue:' + eventName, 'Component');
                 var subStoreName = this.options.subStoreName;
                 Dispatcher.off('refresh:' + subStoreName, 'Component');
                 var storeName = this.options.storeName;
                 Dispatcher.off('refresh:' + storeName, 'Component');
-                this.table.destroy();
+                if(this.table)this.table.destroy();
                 var chart = this.$('.chart-content').highcharts();
                 if (chart)chart.destroy();
             },
@@ -53,26 +53,41 @@ define(
                     order: order
                 };
             },
+            showLoading: function () {
+                if(this.sub_state) {
+                    this.$('.view-placeholder').css({'left':'initial','right':0});
+                }else{
+                    this.$('.view-placeholder>.no-data-view').hide();
+                    this.$('.view-placeholder').css({'right':'initial','left':0});
+                }
+                this.$('.view-placeholder').addClass('show');
+                this.$('.view-placeholder>.loading-view').show();
+            },
+            hideLoading: function () {
+                this.$('.view-placeholder').removeClass('show');
+                this.$('.view-placeholder>.loading-view').hide();
+            },
             showNoData: function () {
                 if(this.sub_state){
-                    this.$('.no-data-view').css({'right':'0','left':'initial'}).show();
+                    this.$('.view-placeholder').css({'left':'initial','right':0});
                 }else{
-                    this.$('.no-data-view').css({'left':'0','right':'initial'}).show();
+                    this.$('.view-placeholder').css({'right':'initial','left':0});
                     this.$('.advanced-table').hide();
                 }
-                this.$('.pageinate').hide();
+                this.$('.view-placeholder').addClass('show');
+                this.$('.view-placeholder>.no-data-view').show();
             },
             hideNoData: function () {
+                this.$('.view-placeholder').removeClass('show');
+                this.$('.view-placeholder>.no-data-view').hide();
                 if(this.sub_state){
-                    this.$('.no-data-view').css({'right':'0','left':'initial'}).hide();
+
                 }else{
-                    this.$('.no-data-view').css({'left':'0','right':'initial'}).hide();
                     this.$('.advanced-table').show();
                 }
-                this.$('.pageinate').show();
             },
             clearSeries: function (chart) {
-                if (chart.series.length != 0) {
+                if (chart&&chart.series.length != 0) {
                     do {
                         chart.series[0].remove();
                     }
@@ -80,17 +95,15 @@ define(
                 }
             },
             renderSubChart: function (data) {
-                this.hideLoading();
-                //render
                 var self = this;
                 var chart = this.$('.sub-grid-content').highcharts();
-                //chart.hideLoading();
+                this.hideLoading();
                 if (!data.dates || data.dates.length == 0||_.values(data.dates).length==0) {
+                    this.showNoData();
                     chart.options.legend.enabled = true;
                     this.clearSeries(chart);
-                    this.showNoData();
-                    return;
                 } else {
+                    this.hideNoData();
                     this.clearSeries(chart);
                     //calculate interval
                     var length = _.isArray(data.dates)?data.dates.length:_.values(data.dates).length;
@@ -109,37 +122,29 @@ define(
                         var series = chart.addSeries(item);
                         series.series_type = self.options.storeName;
                     });
+                    chart.setSize(self.$('.sub-grid-content').width(), 300);
                 }
-                chart.setSize(self.$('.sub-grid-content').width(), 300);
             },
             showSubChart: function () {
                 this.$('.close-subtable').show();
                 this.$('.subtable').addClass('on');
+                this.$('.pagination').hide();
             },
             hideSubGrid: function () {
                 this.$('.close-subtable').hide();
                 var chart = this.$('.sub-grid-content').highcharts();
                 this.clearSeries(chart);
                 this.$('.subtable').removeClass('on');
+                this.$('.pagination').show();
             },
             closeSub: function () {
                 this.sub_state = false;
-                //this.perpage = this.back_perpage;
-                //this.$('.pageinate select').val(this.perpage);
-                //this.page = this.back_page;
-                //this.maxPage = this.back_max;
                 this.hideSubGrid();
-                //this.renderPagebar(this.back_start, this.back_end);
             },
             openSub: function (e) {
-                this.sub_state = true;
-//                this.back_perpage = this.perpage;
-//                this.back_max = this.maxPage;
-//                this.back_page = this.page;
-//                this.back_start = this.pagebar.start;
-//                this.back_end = this.pagebar.end;
-                this.page = 1;
                 this.showLoading();
+                this.sub_state = true;
+                this.page = 1;
                 var storeName = this.options.subStoreName;
                 AppCube.DataRepository.refresh(storeName, {});
                 e.stopPropagation();

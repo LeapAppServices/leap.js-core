@@ -8,9 +8,10 @@ define(
         'jquery',
         'underscore',
         'moment',
-        'extend/ui/RetentionChart'
+        'extend/ui/RetentionChart',
+        'i18n'
     ],
-    function (AppCube, U, Dispatcher, template, Marionette, $, _, moment, RetentionChart) {
+    function (AppCube, U, Dispatcher, template, Marionette, $, _, moment, RetentionChart, i18n) {
         /**
          * title
          * ranges
@@ -36,12 +37,12 @@ define(
                 Dispatcher.on('refresh:' + storeName, this.renderComponent, this, 'Component');
             },
             beforeShow: function () {
-                var eventName = this.options.valueEventName ? ':' + this.options.valueEventName : '';
+                var eventName = this.options.valueEventName;
                 Dispatcher.on('change:Time', this.setTimeUnit, this, 'Component');
-                Dispatcher.on('Request.getValue' + eventName, this.getValue, this, 'Component');
+                Dispatcher.on('Request.getValue:' + eventName, this.getValue, this, 'Component');
             },
             initChart: function () {
-                var title = this.options.title;
+                var title = this.options.doI18n?i18n.t(this.options.title):this.options.title;
                 this.$('.caption').html('<span class="app-icon app-icon-close"></span>' + title);
                 this.ranges = this.options.ranges;
                 if (this.options.time && this.options.time.length > 0) {
@@ -57,8 +58,9 @@ define(
                 var default_time_unit = this.options.default_time_unit;
                 this.time_unit = times[default_time_unit || 0].value;
                 _.forEach(times, function (time, index) {
+                    var timeName = self.options.doI18n?i18n.t(time.name):time.name;
                     self.$('.tabs>.nav').append('<li class="' + (index == default_time_unit ? 'active' : '') + '" data-value="' + time.value + '">' +
-                        '<a href="javascript:void(0)">' + time.name + '</a></li>');
+                        '<a href="javascript:void(0)">' + timeName + '</a></li>');
                 });
                 if (this.setTimeUnit)this.setTimeUnit(this.ranges, true);
             },
@@ -106,30 +108,39 @@ define(
                 this.time_unit = time_unit;
                 this.refresh();
             },
-            showLoading:function(){
-
+            showLoading: function () {
+                this.$('.view-placeholder').addClass('show');
+                this.$('.view-placeholder>.loading-view').show();
             },
-            hideLoading:function(){
-
+            hideLoading: function () {
+                this.$('.view-placeholder').removeClass('show');
+                this.$('svg').show();
+                this.$('.view-placeholder>.loading-view').hide();
             },
             showNoData: function () {
+                this.$('.view-placeholder').addClass('show');
                 this.$('svg').hide();
-                this.$('.retention-view').append('<div class="no-data-view">No Data To Display</div>');
+                this.$('.view-placeholder>.no-data-view').show();
             },
             hideNoData: function () {
-                this.$('svg').show();
-                this.$('.no-data-view').remove();
+                this.$('.view-placeholder').removeClass('show');
+                this.$('.view-placeholder>.no-data-view').hide();
             },
             renderChart: function (data) {
-                this.chart.setData(data.stats);
-                this.chart.setRange(this.time_unit);
-                this.chart.render();
+                this.hideLoading();
+                if(!data||data.stats.length==0){
+                    this.showNoData();
+                }else{
+                    this.hideNoData();
+                    this.chart.setData(data.stats);
+                    this.chart.setRange(this.time_unit);
+                    this.chart.render();
+                }
             },
             renderComponent: function () {
                 var self = this;
                 var storeName = this.options.storeName;
                 var stateName = this.options.stateName;
-                this.hideNoData();
                 AppCube.DataRepository.fetch(storeName, stateName, this.stats).done(function (res){
                     self.renderChart(res);
                 });
@@ -139,6 +150,7 @@ define(
             },
             render: function () {
                 Marionette.ItemView.prototype.render.call(this);
+                this.$el.i18n();
                 var chartOptions = this.options.retention;
                 chartOptions.height = (length+1)*32;
                 chartOptions.renderTo = '.chart-content';
@@ -152,13 +164,12 @@ define(
             },
             refresh: function () {
                 var storeName = this.options.storeName;
-                this.hideNoData();
                 this.showLoading();
                 AppCube.DataRepository.refresh(storeName);
             },
             beforeHide: function () {
-                var eventName = this.options.valueEventName ? ':' + this.options.valueEventName : '';
-                Dispatcher.off('Request.getValue' + eventName, 'Component');
+                var eventName = this.options.valueEventName;
+                Dispatcher.off('Request.getValue:' + eventName, 'Component');
                 Dispatcher.off('change:Time', 'Component');
                 var chart = this.chart;
                 if (chart){

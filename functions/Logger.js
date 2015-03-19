@@ -1,9 +1,10 @@
 define(
     [
+        'language',
         'jquery',
         'pnotify'
     ],
-    function ($, PNotify) {
+    function (Language, $, PNotify) {
 
 //        var defaults = {
 //            "timeOut": "3000",
@@ -14,10 +15,13 @@ define(
 //        };
         var Logger = {};
 
-        Logger.info = function (message, title, options) {
-            message = message || 'Info';
+        Logger.info = function (message, options) {
+            if(options&&options.doI18n==true){
+                message = Language.i18n(message);
+            }else{
+                message = message || 'Info';
+            }
             new PNotify({
-                title: title,
                 styling: "fontawesome",
                 text: message,
                 type: 'info',
@@ -25,10 +29,13 @@ define(
             });
         };
 
-        Logger.warning = function (message, title, options) {
-            message = message || 'Warning';
+        Logger.warning = function (message, options) {
+            if(options&&options.doI18n==true){
+                message = Language.i18n(message);
+            }else{
+                message = message || 'Warning';
+            }
             new PNotify({
-                title: title,
                 styling: "fontawesome",
                 text: message,
                 type: 'warning',
@@ -36,10 +43,13 @@ define(
             });
         };
 
-        Logger.success = function (message, title, options) {
-            message = message || 'Success';
+        Logger.success = function (message, options) {
+            if(options&&options.doI18n==true){
+                message = Language.i18n(message);
+            }else{
+                message = message || 'Success';
+            }
             new PNotify({
-                title: title,
                 styling: "fontawesome",
                 text: message,
                 type: 'success',
@@ -55,15 +65,23 @@ define(
                 if (e.responseText) {
                     try {
                         var json = JSON.parse(e.responseText);
-                        message = json.errorMessage;
+                        message = Language.i18n('error.net.'+json.errorCode)||json.errorMessage;
                     } catch (error) {
                         message = e.status + ' ' + e.statusText
                     }
                 } else {
-                    message = e.status + ' ' + e.statusText
+                    if(e.status ==0 && e.statusText == 'timeout'){
+                        message = Language.i18n('error.net.0');
+                    }else{
+                        message = e.status + ' ' + e.statusText
+                    }
                 }
             } else {
-                message = e;
+                if(options&&options.doI18n==true){
+                    message = Language.i18n(e);
+                }else{
+                    message = e;
+                }
             }
             new PNotify({
                 styling: "fontawesome",
@@ -72,7 +90,6 @@ define(
                 delay: 3000
             });
         };
-
         return Logger;
 
     });

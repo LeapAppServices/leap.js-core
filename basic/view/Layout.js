@@ -31,8 +31,19 @@ define([
                 Dispatcher.on('show', this.show, this, 'Layout');
             },
             show: function (options) {
-                if (this.options.action == options.action) {
-                    this.changeState(options.state || this._defaultState);
+                this.beforeShow();
+                if (this.options.stay || this.options.action == 'all' || ($.inArray(this.options.action, options.actions) > -1)) {
+                    if (!options.options.stayState) {
+                        this.changeState(options.state || this._defaultState);
+                    }
+                    if (this.options.store)this.loadStoreData();
+                    this.renderState(options.options);
+                    $(this.options.root).show();
+                }
+                else if (this.options.action == options.action) {
+                    if (!options.options.stayState) {
+                        this.changeState(options.state || this._defaultState);
+                    }
                     if (this.options.store)this.loadStoreData();
                     AppCube.current_action = options.action;
                     AppCube.current_state = this._currentState;
@@ -41,8 +52,11 @@ define([
                 }
             },
             hide: function (options) {
-                if (this.options.action != options.action) {
-                    if ($(this.options.root).is(':visible')) {
+                if (this.options.stay) {
+                    return
+                }
+                else if (this.options.action != options.action) {
+                    if ($(this.options.root).css('display') != 'none') {
                         $(this.options.root).hide();
                         this.clearState();
                     }

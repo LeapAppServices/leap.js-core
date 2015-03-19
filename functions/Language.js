@@ -1,11 +1,8 @@
 define([
     "jquery",
     "i18n",
-    'Cookie',
-    "C",
-    "Q"
-], function($,i18n,Cookie,C,Q){
-
+    'Storage'
+], function($,i18n,Storage){
     var language = {
         langCodes: {
             "en": "en",
@@ -57,27 +54,17 @@ define([
             "es": "Español"
         },
         init:function(callback){
-            var langCode = this.getCurLangCode();
-            $.i18n.init({
-                lng:langCode,
-                resGetPath: '/locales/__lng__/__ns__.json',
-                ns:{
-                    namespaces:['component'],
-                    defaultNs:'component'
-                }
-            },function(){
-                callback();
-            });
+            this.setDefaultLanguage("component",callback);
         },
         i18n:function(key){
-            return $.i18n.map[key];
+            return i18n.t(key) || i18n.t(key+".default")||"";
         },
         _getCurLangCode: function() {
             return (typeof window.navigator.language != "undefined" ? window.navigator.language : window.navigator.browserLanguage);
         },
         getCurLangCode: function() {
             var self = this;
-            var storeLang = Cookie.get("language");
+            var storeLang = Storage.get("language");
             if (storeLang) {
                     return storeLang;
                 }
@@ -99,79 +86,65 @@ define([
         getLangName: function(langCode) {
             return this.langNames[langCode];
         },
-        localize:function () {
-
-            var helpers = {
-                onlyFirstUpper:function (str) {
-                    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+//        localize:function () {
+//
+//            var helpers = {
+//                onlyFirstUpper:function (str) {
+//                    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+//                },
+//                upper:function (str) {
+//                    return str.toUpperCase();
+//                }
+//            };
+//
+//            // translate dashboard
+//            $("[data-localize]").each(function () {
+//                var elem = $(this),
+//                    toLocal = elem.data("localize").split("!"),
+//                    localizedValue = "";
+//
+//                if (toLocal.length == 2) {
+//                    if (helpers[toLocal[0]]) {
+//                        localizedValue = helpers[toLocal[0]](jQuery.i18n.map[toLocal[1]]);
+//                    } else {
+//                        localizedValue = jQuery.i18n.prop(toLocal[0], jQuery.i18n.map[toLocal[1]]);
+//                    }
+//                } else {
+//                    localizedValue = jQuery.i18n.map[elem.data("localize")];
+//                }
+//
+//                if (elem.is("input[type=text]") || elem.is("input[type=password]")) {
+//                    elem.attr("placeholder", localizedValue);
+//                } else if (elem.is("input[type=button]") || elem.is("input[type=submit]")) {
+//                    elem.attr("value", localizedValue);
+//                } else {
+//                    elem.text(localizedValue);
+//                }
+//            });
+//        },
+        setLanguage: function(langCode, name, callback) {
+            langCode = langCode || this.getCurLangCode();
+            Storage.set("language",langCode);
+            $.i18n.init({
+                lng:langCode,
+                resGetPath: '/front/locales/__lng__/__ns__.json?t='+(new Date().getTime()),
+                parseMissingKey:function(str,obj){
+                    return ""
                 },
-                upper:function (str) {
-                    return str.toUpperCase();
-                }
-            };
-
-            // translate dashboard
-            $("[data-localize]").each(function () {
-                var elem = $(this),
-                    toLocal = elem.data("localize").split("!"),
-                    localizedValue = "";
-
-                if (toLocal.length == 2) {
-                    if (helpers[toLocal[0]]) {
-                        localizedValue = helpers[toLocal[0]](jQuery.i18n.map[toLocal[1]]);
-                    } else {
-                        localizedValue = jQuery.i18n.prop(toLocal[0], jQuery.i18n.map[toLocal[1]]);
-                    }
-                } else {
-                    localizedValue = jQuery.i18n.map[elem.data("localize")];
-                }
-
-                if (elem.is("input[type=text]") || elem.is("input[type=password]")) {
-                    elem.attr("placeholder", localizedValue);
-                } else if (elem.is("input[type=button]") || elem.is("input[type=submit]")) {
-                    elem.attr("value", localizedValue);
-                } else {
-                    elem.text(localizedValue);
+                objectTreeKeyHandler:function(){
+                    return ""
+                },
+                ns:name||'component'
+            },function(){
+                $('body').i18n();
+                if(callback && (typeof(callback)== 'function') ){
+                    callback();
                 }
             });
         },
-        setLanguage: function(langCode, trigger,name,path) {
-            var self = this;
-            if (!trigger) trigger = true;
-            Cookie.set("language",langCode);
-            $.i18n.properties({
-                name: name?name:'dashboard',
-                path: path?path:'/localization/'+name+'/',
-                mode: 'map',
-                cache: appConfig.isDebug ? false : true,
-                language: langCode,
-                callback: function() {
-                    if (trigger) {
-                        $(document).trigger('eLangChange');
-                    }
-                    if ($("#active-lang")) {
-                        $("#active-lang").text(self.getLangName(langCode));
-                    }
-                    $("[data-localize]").each(function() {
-                        var elem = $(this),
-                            localizedValue = self.i18n(elem.data("localize"));
-
-                        if (elem.is("input[type=text]") || elem.is("input[type=password]")) {
-                            elem.attr("placeholder", localizedValue);
-                        } else if (elem.is("input[type=button]") || elem.is("input[type=submit]")) {
-                            elem.attr("value", localizedValue);
-                        } else {
-                            elem.text(self.i18n(elem.data("localize")));
-                        }
-                    });
-                }
-            });
-        },
-        setDefaultLanguage: function(trigger,name) {
-            var self = this;
-            if (!trigger) trigger = false;
-            var curLangCode = self.getCurLangCode() || "en";
-            self.setLanguage(curLangCode, trigger,name);
+        setDefaultLanguage: function(name,callback) {
+            var curLangCode = this.getCurLangCode() || "en";
+            this.setLanguage(curLangCode,name,callback);
         }
     };
     return language;

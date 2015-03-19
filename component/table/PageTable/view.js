@@ -6,23 +6,25 @@ define(
         'tpl!./template.html',
         'component/table/BasicTable/view',
         'jquery',
-        'underscore'
+        'underscore',
+        'i18n',
+        'semanticui_dropdown'
     ],
-    function (AppCube, U, Dispatcher, template, BasicTable, $, _) {
+    function (AppCube, U, Dispatcher, template, BasicTable, $, _,i18n) {
 
         return BasicTable.extend({
             template: template,
             events: {
-                'change .pageinate select': 'changePerpage',
-                'click .page-btn>.btn': 'changePage',
+                'click .pagination .menu>.item': 'changePerpage',
+                'click .page-btn>.button': 'changePage',
                 'click th.sortable': 'changeSort'
             },
             beforeShow: function () {
-                var eventName = this.options.valueEventName ? ':' + this.options.valueEventName : '';
-                Dispatcher.on('Request.getValue' + eventName, this.getValue, this, 'Component');
+                var eventName = this.options.valueEventName;
+                Dispatcher.on('Request.getValue:' + eventName, this.getValue, this, 'Component');
             },
             initGrid: function () {
-                var title = this.options.title;
+                var title = this.options.doI18n?i18n.t(this.options.title):this.options.title;
                 this.$('.caption').html('<span class="app-icon app-icon-close"></span>' + title);
                 if (this.options.page && this.options.page.length > 0) {
                     this.initPage();
@@ -33,14 +35,16 @@ define(
                 var page = this.options.page;
                 var tmp = [];
                 _.forEach(page, function (item) {
-                    var node = $('<option value="' + item.value + '">' + item.name + '</option>');
+                    var node = $('<div class="item" data-value="' + item.value + '">' + item.name + '</div>');
                     tmp.push(node);
                 });
                 this.pagebar = {start: 1, end: 1};
                 this.perpage = page[0].value;
                 this.page = 1;
                 this.maxPage = 1;
-                this.$('.pageinate select').html(tmp);
+                this.$('.pagination .ui.dropdown>.menu').html(tmp);
+                this.$('.pagination .ui.dropdown').dropdown();
+                this.$('.pagination .ui.dropdown').dropdown('set selected',this.perpage);
             },
             initSort: function () {
                 this.order = this.options.order;
@@ -63,7 +67,7 @@ define(
                 e.stopPropagation();
             },
             changePerpage: function () {
-                var value = this.$('.pageinate select').val();
+                var value = this.$('.pagination .ui.dropdown').dropdown('get value');
                 this.perpage = parseInt(value);
                 this.page = 1;
                 if (!this.options.static_data) {
@@ -110,7 +114,7 @@ define(
                 this.pagebar.start = start;
                 this.pagebar.end = end;
                 this.$('.page-status').text(start + ' - ' + end);
-                this.$('.page-btn>.btn').addClass('disabled');
+                this.$('.page-btn>.button').addClass('disabled');
                 if (this.maxPage > this.page) {
                     this.$('.page-btn>.next').removeClass('disabled')
                 }
@@ -120,7 +124,12 @@ define(
             },
             renderGrid: function (data) {
                 var tmp, end, next;
-                if (!data || data.length == 0)this.showNoData();
+                this.hideLoading();
+                if (!data || data.length == 0){
+                    this.showNoData();
+                }else{
+                    this.hideNoData();
+                }
                 var start = (this.page - 1) * (this.perpage) + 1;
                 if (data && data.length > this.perpage) {
                     this.maxPage = this.page + 1;
@@ -131,35 +140,33 @@ define(
                     tmp = data;
                     end = start + data.length - 1;
                 }
-                this.hideLoading();
                 this.renderPagebar(start, end);
                 this.table.render(tmp, this.options.columns, _.extend({}, this.options.options, this.order));
             },
             showNoData: function () {
-                this.$('.no-data-view').show();
-                this.$('.advanced-table').hide();
-                this.$('.pageinate').hide();
+                this.$('.view-placeholder').addClass('show relative');
+                this.$('.view-placeholder>.no-data-view').show();
+                this.$('.pagination').hide();
             },
             hideNoData: function () {
-                this.$('.no-data-view').hide();
-                this.$('.advanced-table').show();
-                this.$('.pageinate').show();
+                this.$('.view-placeholder').removeClass('show relative');
+                this.$('.view-placeholder>.no-data-view').hide();
+                this.$('.pagination').show();
             },
             renderComponent: function () {
                 var self = this;
                 var storeName = this.options.storeName;
                 var stateName = this.options.stateName;
                 this.showLoading();
-                this.hideNoData();
                 var options = this.getValue();
                 AppCube.DataRepository.fetch(storeName, stateName, options).done(function (res) {
                     self.renderGrid(res);
                 });
             },
             beforeHide: function () {
-                var eventName = this.options.valueEventName ? ':' + this.options.valueEventName : '';
-                Dispatcher.off('Request.getValue' + eventName, 'Component');
-                this.table.destroy();
+                var eventName = this.options.valueEventName;
+                Dispatcher.off('Request.getValue:' + eventName, 'Component');
+                if(this.table)this.table.destroy();
             }
         });
     });

@@ -3,6 +3,7 @@ define(['jquery','underscore'],function($,_){
         labelColor:"#5ab3ff",
         labelBorderColor:"#5ab3ff",
         labelDisabledColor:"#8e99a1",
+        labelHighlightColor:"#ffaa00",
         fontsize:14,
         maxLevel:5
     };
@@ -19,12 +20,12 @@ define(['jquery','underscore'],function($,_){
             obj.value = item;
             return obj;
         }).reject(function(item){
-            return item.name == 'Exited App';
+            return item.name == 'End Session';
         }).sortBy(function(item){return -item.value;}).value();
         if(list.length<=4){
             list.push({
-                name:'Exited App',
-                value:children['Exited App']
+                name:'End Session',
+                value:children['End Session']
             });
             tmp = _.sortBy(list,function(item){return -item.value;});
         }else{
@@ -33,8 +34,8 @@ define(['jquery','underscore'],function($,_){
             }).value||0;
             tmp = list.slice(0,4);
             tmp.push({
-                name:'Exited App',
-                value:children['Exited App']
+                name:'End Session',
+                value:children['End Session']
             });
             tmp = _.sortBy(tmp,function(item){return -item.value;});
             tmp.push({
@@ -53,20 +54,22 @@ define(['jquery','underscore'],function($,_){
         this.root = render_root;
         var canvas = $('<canvas class="line-canvas" width="900" height="800"></canvas>').appendTo(render_root);
         this.canvas = canvas.get(0);
-        if(data)this.render(data,params);
+        this.clickStack = [];
     };
 
-    FlowChart.prototype.render = function(data,params){
-        if(data.length==0){
-            throw new Error('data is broken!');
+    FlowChart.prototype.renderBody = function(data,params){
+        for(var i=0;i<this.clickStack.length;i++){
+            var name = this.clickStack[i];
+            var node = this.root.find('.line:last>.activity[data-name="'+name+'"]');
+            if(!node.hasClass('disabled')){
+                var data = this.getData(name);
+                if(data&&data.out){
+                    this.renderChild(node,data.out,params||{});
+                }
+            }else{
+                break;
+            }
         }
-        this.data = data;
-        var rootdata = _.find(data,function(item){
-            return item.root == true;
-        });
-        if(!rootdata)return;
-        this.renderRoot(rootdata,params||{});
-        this.bindEvent();
     };
 
     FlowChart.prototype.renderFull = function(data,params){
@@ -78,26 +81,35 @@ define(['jquery','underscore'],function($,_){
             return item.root == true;
         });
         if(!rootdata)return;
-        this.renderRoot(rootdata,params||{});
+//        render full default
+//
+//        if(this.clickStack.length==0){
+//            var count = 0;
+//            var current = rootdata;
+//            while(count<4){
+//                count++;
+//                current = this.getMaxData(current);
+//                if(current){
+//                    this.clickStack.push(current.activity);
+//                }else{
+//                    break;
+//                }
+//            }
+//        }
+        this.setRoot(rootdata,params||{});
+        this.renderBody();
         this.bindEvent();
-        while(true){
-            var node = this.root.find('.line:last>.activity:eq(0)');
-            if(!node.hasClass('disabled')){
-                var data = this.getData(node.attr('data-value'));
-                if(data&&data.out){
-                    this.renderChild(node,data.out,params||{});
-                }
-            }else{
-                break;
-            }
-        }
+    };
+    FlowChart.prototype.setRoot = function(dataline,params){
+        if(!dataline)return;
+        this.rootName = dataline.activity;
+        this.renderRoot(dataline,params);
     };
 
     FlowChart.prototype.renderRoot = function(dataline,params){
-        this.clearAll();
         var rootName = dataline.activity;
         var rootline = $('<div class="root line"></div>').appendTo(this.root);
-        var rootNode = $('<div class="activity root" data-percent=100 data-value="'+rootName+'">'+rootName+'</div>').appendTo(rootline);
+        var rootNode = $('<div class="activity root" data-name="'+rootName+'" data-value=100 >'+rootName+'</div>').appendTo(rootline);
         var childNode = dataline.out;
         this.renderChild(rootNode,childNode,params||{});
     };
@@ -106,26 +118,27 @@ define(['jquery','underscore'],function($,_){
         var render_data = preprocess(children);
         var level = this.root.find('.line').length;
         if(level>=defaults.maxLevel){
-            //parent.addClass('disabled');
             return;
         }
         var line = $('<div class="line"></div>').appendTo(this.root);
         var self = this;
         _.forEach(render_data,function(item){
-            var node = $('<div class="activity" data-value="'+item.name+'">'+item.name+'</div>').appendTo(line);
+            $('<div class="activity'+(item.name==self.clickStack[level-1]?" highlight":"")+'" data-name="'+item.name+'" data-value="'+item.value+'">'+item.name+'</div>').appendTo(line);
         });
-        var dataline = this.getData(parent.attr('data-value'));
-        var rootPercent = parent.attr('data-percent');
+        //var dataline = this.getData(parent.attr('data-value'));
+        //var rootPercent = parent.attr('data-percent');
         line.children('.activity').each(function(){
-            var name = $(this).attr('data-value');
-            var child_value = Math.round(dataline.out[name]*10000)/100;
-            var value = rootPercent*child_value/100;
-            if(value<0.1||name=="Exited App"||name=="Others"||level>=defaults.maxLevel-1){
+            var percent = $(this).attr('data-value');
+            var name = $(this).attr('data-name');
+            var value = Math.round(percent*10000)/100;
+            //var value = rootPercent*child_value/100;
+            if(value<0.1||name=="End Session"||name=="Others"||level>=defaults.maxLevel-1){
                 $(this).addClass('disabled');
             }
-            $(this).attr('data-percent',value);
+            //$(this).attr('data-value',value);
             var display_value = Math.round(value*100)/100+'%';
-            self.drawLine(parent.get(0),this,display_value,params||{});
+            var highlight = self.clickStack[level-1]==name;
+            self.drawLine(parent.get(0),this,display_value,params||{},highlight);
         });
     };
 
@@ -138,15 +151,24 @@ define(['jquery','underscore'],function($,_){
         b.clearRect(0,node.offsetTop+node.offsetHeight/2, c.width, c.height);
     };
 
-    FlowChart.prototype.clearAll = function(){
+    FlowChart.prototype.clearAll = function(bool){
         var root = this.root;
+        if(!bool)this.clickStack = [];
         root.find('.line').remove();
         var c = this.canvas;
         var b = c.getContext("2d");
         b.clearRect(0, 0, c.width, c.height);
     };
 
-    FlowChart.prototype.drawLine = function(startNode,endNode,data,params){
+    FlowChart.prototype.clearBody = function(){
+        var root = this.root;
+        root.find('.line').not('.root').remove();
+        var c = this.canvas;
+        var b = c.getContext("2d");
+        b.clearRect(0, 0, c.width, c.height);
+    };
+
+    FlowChart.prototype.drawLine = function(startNode,endNode,data,params,highlight){
         var c = this.canvas;
         var start = {
             x:startNode.offsetLeft+startNode.offsetWidth/2,
@@ -159,6 +181,8 @@ define(['jquery','underscore'],function($,_){
         var color;
         if($(endNode).hasClass('disabled')){
             color = params.labelDisabledColor||defaults.labelDisabledColor;
+        }else if(highlight){
+            color = params.labelHighlightColor||defaults.labelHighlightColor;
         }else{
             color = params.labelColor||defaults.labelColor;
         }
@@ -180,8 +204,24 @@ define(['jquery','underscore'],function($,_){
         b.restore();
         b.textAlign = "center";
         b.fillStyle = "#ffffff";
+        b.font="12px Arial";
         b.fillText(data,(start.x+end.x)/2,(end.y+start.y)/2+5);
         b.restore();
+    };
+
+    FlowChart.prototype.getMaxData = function(data){
+        if(!data.out){
+            return false;
+        }
+        var activity = '';
+        var max = 0;
+        _.forEach(data.out,function(item,index){
+            if(item>max){
+                max = item;
+                activity = index;
+            }
+        });
+        return this.getData(activity);
     };
 
     FlowChart.prototype.getData = function(name){
@@ -196,11 +236,20 @@ define(['jquery','underscore'],function($,_){
         this.root.off('click.activity').on('click.activity','.activity',function(){
             var root = $(this);
             if($(this).hasClass('disabled'))return;
-            self.clearChild(root);
-            var data = self.getData(root.attr('data-value'));
-            if(data&&data.out){
-                self.renderChild($(this),data.out);
+            var level = $(this).parent().index()-1;
+            var length = self.clickStack.length;
+            var count = length-level+1;
+            while(count>0){
+                count--;
+                self.clickStack.pop();
             }
+            if(!$(this).hasClass('root')){
+                var name = $(this).attr('data-name');
+                self.clickStack.push(name);
+            }
+            self.clearAll(true);
+            self.renderRoot(self.getData(self.rootName));
+            self.renderBody();
         });
     };
 

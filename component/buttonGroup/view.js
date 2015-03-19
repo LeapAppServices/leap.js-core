@@ -2,8 +2,9 @@ define([
     'dispatcher',
     'marionette',
     'jquery',
-    'underscore'
-], function (Dispatcher, Marionette, $, _) {
+    'underscore',
+    'i18n'
+], function (Dispatcher, Marionette, $, _,i18n) {
     /**
      * valueEventName
      * buttons: name,value
@@ -17,8 +18,8 @@ define([
         init: function () {
         },
         beforeShow: function () {
-            var eventName = this.options.valueEventName ? ':' + this.options.valueEventName : '';
-            Dispatcher.on('Request.getValue' + eventName, this.getValue, this, 'Component');
+            var eventName = this.options.valueEventName;
+            Dispatcher.on('Request.getValue:' + eventName, this.getValue, this, 'Component');
         },
         getValue: function () {
             return this.$('.btn-group').attr('data-value');
@@ -37,10 +38,12 @@ define([
         },
         render: function () {
             var tmp = [];
+            var self = this;
             Marionette.ItemView.prototype.render.call(this);
             _.forEach(this.options.buttons, function (item, index) {
                 var className = item.className || '';
-                var node = $('<div class="btn btn-default ' + className + '" data-value="' + item.value + '">' + item.name + '</div>');
+                var labelName = self.options.doI18n?i18n.t(item.name):item.name;
+                var node = $('<div class="btn btn-default ' + className + '" data-value="' + item.value + '">' + labelName + '</div>');
                 tmp.push(node);
             });
             this.$('.btn-group').html(tmp);
@@ -51,8 +54,8 @@ define([
             }
         },
         beforeHide: function () {
-            var eventName = this.options.valueEventName ? ':' + this.options.valueEventName : '';
-            Dispatcher.off('Request.getValue' + eventName, 'Component');
+            var eventName = this.options.valueEventName;
+            Dispatcher.off('Request.getValue:' + eventName, 'Component');
         }
     });
 });

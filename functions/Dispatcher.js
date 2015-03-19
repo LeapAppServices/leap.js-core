@@ -37,7 +37,7 @@ define([
                     Backbone.Wreqr.radio.channel(channel || 'global').commands.removeHandler(events[1]);
                     break;
                 case 'Request':
-                    Backbone.Wreqr.radio.channel('global').reqres.removeHandler(events[1]);
+                    Backbone.Wreqr.radio.channel(channel || 'global').reqres.removeHandler(events[1]);
                     break;
                 default:
                     throw new Error('None support Message Type');

@@ -8,9 +8,10 @@ define(
         'jquery',
         'underscore',
         'moment',
-        'extend/ui/FlowChart'
+        'extend/ui/FlowChart',
+        'i18n'
     ],
-    function (AppCube, U, Dispatcher, template, Marionette, $, _, moment, FlowChart) {
+    function (AppCube, U, Dispatcher, template, Marionette, $, _, moment, FlowChart,i18n) {
         /**
          * title
          * ranges
@@ -30,36 +31,54 @@ define(
             init: function () {
             },
             beforeShow: function () {
-                var eventName = this.options.valueEventName ? ':' + this.options.valueEventName : '';
+                var eventName = this.options.valueEventName;
                 Dispatcher.on('change:Time', this.refresh, this, 'Component');
-                Dispatcher.on('Request.getValue' + eventName, this.getValue, this, 'Component');
+                Dispatcher.on('Request.getValue:' + eventName, this.getValue, this, 'Component');
 
                 var storeName = this.options.storeName;
                 Dispatcher.on('refresh:' + storeName, this.renderComponent, this, 'Component');
             },
+            beforeHide: function () {
+                var eventName = this.options.valueEventName;
+                Dispatcher.off('Request.getValue:' + eventName, 'Component');
+                Dispatcher.off('change:Time', 'Component');
+                var storeName = this.options.storeName;
+                Dispatcher.off('refresh:' + storeName, 'Component');
+                var chart = this.chart;
+                if (chart){
+                    chart.clearAll();
+                    this.chart = null;
+                }
+            },
             initChart: function () {
-                var title = this.options.title;
+                var title = this.options.doI18n?i18n.t(this.options.title):this.options.title;
                 this.$('.caption').html('<span class="app-icon app-icon-close"></span>' + title);
             },
-            showLoading:function(){
-
+            showLoading: function () {
+                this.$('.view-placeholder').addClass('show');
+                this.$('.view-placeholder>.loading-view').show();
             },
-            hideLoading:function(){
-
+            hideLoading: function () {
+                this.$('.view-placeholder').removeClass('show');
+                this.$('canvas').show();
+                this.$('.view-placeholder>.loading-view').hide();
             },
             showNoData: function () {
+                this.$('.view-placeholder').addClass('show');
                 this.$('canvas').hide();
-                this.$('.chart-content').append('<div class="no-data-view">No Data To Display</div>');
+                this.$('.view-placeholder>.no-data-view').show();
             },
             hideNoData: function () {
-                this.$('canvas').show();
-                this.$('.no-data-view').remove();
+                this.$('.view-placeholder').removeClass('show');
+                this.$('.view-placeholder>.no-data-view').hide();
             },
             renderChart: function (data) {
+                this.hideLoading();
                 if(data.length==0){
-                    this.chart.clearAll();
                     this.showNoData();
+                    this.chart.clearAll();
                 }else{
+                    this.hideNoData();
                     this.chart.renderFull(data);
                 }
             },
@@ -67,7 +86,6 @@ define(
                 var self = this;
                 var storeName = this.options.storeName;
                 var stateName = this.options.stateName;
-                this.hideNoData();
                 AppCube.DataRepository.fetch(storeName, stateName, this.stats).done(function (res){
                     self.renderChart(res.stats);
                 });
@@ -77,6 +95,7 @@ define(
             },
             render: function () {
                 Marionette.ItemView.prototype.render.call(this);
+                this.$el.i18n();
                 var chartOptions = this.options.flow;
                 chartOptions.renderTo = this.$('.chart-content');
                 this.chart = new FlowChart(chartOptions);
@@ -85,21 +104,9 @@ define(
             },
             refresh: function () {
                 var storeName = this.options.storeName;
-                this.hideNoData();
                 this.showLoading();
+                Dispatcher.trigger('startRefresh:'+storeName,{},'Component');
                 AppCube.DataRepository.refresh(storeName);
-            },
-            beforeHide: function () {
-                var eventName = this.options.valueEventName ? ':' + this.options.valueEventName : '';
-                Dispatcher.off('Request.getValue' + eventName, 'Component');
-                Dispatcher.off('change:Time', 'Component');
-                var storeName = this.options.storeName;
-                Dispatcher.off('refresh:' + storeName, 'Component');
-                var chart = this.chart;
-                if (chart){
-                    chart.clearAll();
-                    this.chart = null;
-                }
             }
         });
     });

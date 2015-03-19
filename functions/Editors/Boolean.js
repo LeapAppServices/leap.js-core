@@ -27,7 +27,7 @@ define([
             loadValue:function(item){
                 var value = item[args.column.field]?true:false;
                 if(typeof item[args.column.field] !='object'){
-                    scope.defaultValue = item[args.column.field]?'true':'false';
+                    scope.defaultValue = String(item[args.column.field]);
                 }
                 scope.input.find('[value='+value+']').prop('selected',true);
             }

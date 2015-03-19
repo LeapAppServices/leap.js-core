@@ -1,4 +1,4 @@
-define(['jquery','underscore','d3'],function($,_,d3){
+define(['jquery','underscore','d3','i18n'],function($,_,d3,i18n){
     var defaults = {
         colors:[
             "#d4ede0",
@@ -76,7 +76,13 @@ define(['jquery','underscore','d3'],function($,_,d3){
             .attr('width',params.date_width+params.grid.width)
             .attr('height',height);
 
-        var content_width = render_root[0][0].offsetWidth-params.date_width-params.grid.width-1;
+        //var content_width = render_root[0][0].offsetWidth-params.date_width-params.grid.width-1;
+        var content_width = $(window).width() - 250 -250 -80-1;
+        var self = this;
+        $(window).off('resize.retention').on('resize.retention',function(){
+            var width = $(window).width() - 250 -250 -80-1;
+            d3.select(self.params.renderTo).selectAll('div')[0][1].style.width = width +'px';
+        });
         this.content = d3.select(params.renderTo)
             .append('div')
             .attr('style','overflow-x:scroll;float:left;width:'+content_width+'px')
@@ -108,13 +114,13 @@ define(['jquery','underscore','d3'],function($,_,d3){
     RetentionChart.prototype.setRange = function(range){
         switch(range){
             case 'daily':
-                this.params.label_prefix = 'Day Later';
+                this.params.label_prefix = i18n.t('analytics.tag.day-later');
                 break;
             case 'weekly':
-                this.params.label_prefix = 'Week Later';
+                this.params.label_prefix = i18n.t('analytics.tag.week-later');
                 break;
             case 'monthly':
-                this.params.label_prefix = 'Month Later';
+                this.params.label_prefix = i18n.t('analytics.tag.month-later');
                 break;
         }
     };
@@ -149,7 +155,7 @@ define(['jquery','underscore','d3'],function($,_,d3){
             .attr('width',params.date_width).attr('height',params.grid.height);
 
         root.append('text')
-            .text('Date')
+            .text(i18n.t('analytics.tag.date'))
             .attr('x',params.grid.padding.left)
             .attr('y',fonty)
             .attr('text-anchor','start')
@@ -165,7 +171,7 @@ define(['jquery','underscore','d3'],function($,_,d3){
             .attr('width',params.grid.width).attr('height',params.grid.height);
 
         root.append('text')
-            .text('New Users')
+            .text(i18n.t('analytics.tag.new-users'))
             .attr('x',params.grid.padding.left+params.date_width)
             .attr('y',fonty)
             .attr('text-anchor','start')

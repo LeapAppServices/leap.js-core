@@ -1,4 +1,4 @@
-define(['underscore', 'jquery'], function (_, $) {
+define(['underscore', 'jquery','language','Logger'], function (_, $,language,Logger) {
 
 
     return {
@@ -19,38 +19,6 @@ define(['underscore', 'jquery'], function (_, $) {
              return $.extend(true,{},obj);
              */
         },
-
-        Explode: function (inputstring, separators, includeEmpties) {
-            if (typeof inputstring != 'string') {
-                throw Error('Utils.Explode: type must be string');
-            }
-            if (typeof separators == "undefined") {
-                separators = " :;";
-            }
-            var fixedExplode = new Array(1);
-            var currentElement = "";
-            var count = 0;
-
-            for (var x = 0; x < inputstring.length; x++) {
-                var str = inputstring.charAt(x);
-                if (separators.indexOf(str) != -1) {
-                    if (((includeEmpties <= 0) || (includeEmpties == false)) && (currentElement == "")) {
-                    } else {
-                        fixedExplode[count] = currentElement;
-                        count++;
-                        currentElement = "";
-                    }
-                }
-                else {
-                    currentElement += str;
-                }
-            }
-
-            if (( !(includeEmpties <= 0) && (includeEmpties != false)) || (currentElement != "")) {
-                fixedExplode[count] = currentElement;
-            }
-            return fixedExplode;
-        },
         UC_First: function (str) {
             var tmp = str.toLowerCase();
             var result = tmp.replace(/\b\w+\b/g, function (word) {
@@ -58,7 +26,6 @@ define(['underscore', 'jquery'], function (_, $) {
             });
             return result;
         },
-
         jumpTo: function (path) {
             window.location.href = path;
         },
@@ -96,22 +63,6 @@ define(['underscore', 'jquery'], function (_, $) {
             });
             return tmp;
         },
-
-        Transpose: function (data, key, limit) {
-            var tmp = [];
-            _.forEach(data, function (item, index) {
-                if (typeof item[key] != 'undefined') {
-                    tmp.push(item[key]);
-                }
-            });
-            if (limit) {
-                var sorted = _.sortBy(tmp, function (num) {
-                    return num;
-                });
-                tmp = sorted.slice(0, limit);
-            }
-            return tmp;
-        },
         getLength:function(str){
             var realLength = 0;
             var len = str.length;
@@ -141,7 +92,99 @@ define(['underscore', 'jquery'], function (_, $) {
             }else{
                 return "http://"+url;
             }
-        }
+        },
+        strEllip: function(str,n)
+        {
+            var ilen = str.length;
+            if(ilen*2 <= n) return str;
+            n -= 3;
+            var i = 0;
+            while(i < ilen && n > 0)
+            {
+                if(escape(str.charAt(i)).length>4) n--;
+                n--;
+                i++;
+            }
+            if( n > 0) return str;
+            return str.substring(0,i)+"...";
+        },
+        ParseError: function(resp, prefix, type, handlers, options) {
+            var self = this;
+            if (!resp || !type || !prefix) {
+               return Logger.error(language.i18n('error'));
+            }
+            try {
+                var reason = (resp.responseText.charAt(0)!='{')?resp:JSON.parse(resp.responseText);
+                if (reason && (reason.errorCode||reason.status)) {
+                    reason.errorCode = reason.errorCode?reason.errorCode:reason.status;
+                    var key = prefix + '.' + type + '.' + reason.errorCode;
+                    var failkey = prefix + '.error';
 
+                    if(resp.status!= 400){
+                        reason.errorMessage = 'Sever Error  ' + reason.errorCode;
+                    }
+                    if(typeof handlers == 'function'){
+                        handlers(resp,options);
+                    }
+                    else if(handlers && reason.errorCode in handlers){
+                        handlers[reason.errorCode](resp,options);
+                    }
+                    else if(handlers && handlers['default']){
+                        handlers['default'](resp,options);
+                    }
+                    else if (language.i18n(key)) {
+                        Logger.error(language.i18n(key));
+                    }else if(reason.errorMessage) {
+                        Logger.error(reason.errorMessage);
+                    }else {
+                        Logger.error(language.i18n(failkey));
+                    }
+                } else {
+                    Logger.error(text);
+                }
+            } catch (e) {
+                Logger.error(language.i18n('error'));
+            }
+        },
+        goTo:function(action,state,id){
+            window.location.hash = action + (state?'/'+state:'') + (id?'/'+id:'');
+        },
+        normalize:function(key){
+            var map = {
+                "ios":"iOS",
+                "android":"Android",
+                "app store":"App Store",
+                "google play":"Google Play"
+            };
+            return map[key.toLowerCase()] || key;
+        },
+        parseCurrentUrl:function(){
+            var urlObj = {
+               origin:window.location.origin,
+               pathname:window.location.pathname,
+               module:"dashboard",
+               appId:"",
+               hash:window.location.hash,
+               url:window.location.href
+            };
+            var moduleArr = urlObj.pathname.match(/^(.*?)\/(\w+)\/?/);
+            if(moduleArr && moduleArr.length>2){
+               urlObj.module = moduleArr[2];
+            }
+            var appIdArr = urlObj.pathname.match(/\/apps\/(\w+)/);
+            if(appIdArr && appIdArr.length>1){
+               urlObj.appId = appIdArr[1];
+            }
+            if(
+               (urlObj.appId != "") 
+               && 
+               (!/\/apps\/(\w+)/.test(window.location.href))
+               ){
+               //补充 appId
+               urlObj.url =  urlObj.url.replace(urlObj.module,urlObj.module+"/apps/"+urlObj.appId);
+            }
+
+            return urlObj;
+        }
     }
 });

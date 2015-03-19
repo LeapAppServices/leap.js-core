@@ -8,10 +8,11 @@ define(
         'jquery',
         'underscore',
         'moment',
+        'i18n',
         'highcharts',
         'datetimepicker'
     ],
-    function (AppCube, U, Dispatcher, template, Marionette, $, _, moment) {
+    function (AppCube, U, Dispatcher, template, Marionette, $, _, moment,i18n) {
         /**
          * title
          * ranges
@@ -37,12 +38,27 @@ define(
                 Dispatcher.on('refresh:' + storeName, this.renderComponent, this, 'Component');
             },
             beforeShow: function () {
-                var eventName = this.options.valueEventName ? ':' + this.options.valueEventName : '';
+                var eventName = this.options.valueEventName;
                 Dispatcher.on('change:Time', this.setTimeUnit, this, 'Component');
-                Dispatcher.on('Request.getValue' + eventName, this.getValue, this, 'Component');
+                Dispatcher.on('toggle:Time', this.setDefaultTimeUnit, this, 'Component');
+                Dispatcher.on('Request.getValue:' + eventName, this.getValue, this, 'Component');
+            },
+            beforeHide: function () {
+                var eventName = this.options.valueEventName;
+                Dispatcher.off('Request.getValue:' + eventName, 'Component');
+                Dispatcher.off('change:Time', 'Component');
+                Dispatcher.off('toggle:Time', 'Component');
+                var chart = this.$('.chart-content').highcharts();
+                if (chart)chart.destroy();
+                this.$('.btn-compare').each(function (index, item) {
+                    var dtp = $(item).data('DateTimePicker');
+                    if (dtp) {
+                        dtp.destroy();
+                    }
+                });
             },
             initChart: function () {
-                var title = this.options.title;
+                var title = this.options.doI18n?i18n.t(this.options.title):this.options.title;
                 this.$('.caption').html('<span class="app-icon app-icon-close"></span>' + title);
                 this.ranges = this.options.ranges;
                 if (this.options.compared) {
@@ -64,8 +80,8 @@ define(
                 var self = this;
                 this.$('.portlet-title').after('' +
                 '<div class="btn btn-compare btn-default">' +
-                '<i class="app-icon-sm app-icon-compare"></i>' +
-                'Compare</div>');
+                '<i class="app-icon-sm app-icon-compare"></i>' + i18n.t('analytics.tag.compare') +
+                '</div>');
                 this.$('.btn-compare').datetimepicker({
                     useCurrent: true,
                     pickTime: false,
@@ -81,38 +97,48 @@ define(
                 });
             },
             initStats: function () {
+                var self = this;
                 var stats = this.options.stats_list;
                 var node = $('<div class="btn-group btn-group-stats"></div>');
                 _.forEach(stats, function (tab) {
+                    var tabName = self.options.doI18n?i18n.t(tab.name):tab.name;
                     node.append('<div class="btn btn-default" data-value="' +
-                    tab.stats + '">' + tab.name + '</div>');
+                    tab.stats + '">' + tabName + '</div>');
                 });
                 this.stats = this.options.stats;
                 node.children().first().addClass('active');
                 this.$('.portlet-title').after(node);
             },
             initTime: function () {
-                var times = this.options.time;
                 var self = this;
+                var times = this.options.time;
                 var default_time_unit = this.options.default_time_unit;
                 this.time_unit = times[default_time_unit || 0].value;
                 _.forEach(times, function (time, index) {
+                    var timeName = self.options.doI18n?i18n.t(time.name):time.name;
                     self.$('.tabs>.nav').append('<li class="' + (index == default_time_unit ? 'active' : '') + '" data-value="' + time.value + '">' +
-                    '<a href="javascript:void(0)">' + time.name + '</a></li>');
+                    '<a href="javascript:void(0)">' + timeName + '</a></li>');
                 });
                 if (this.setTimeUnit)this.setTimeUnit(this.ranges, true);
             },
             initTimeRange:function (){
-                var times = this.options.timerange;
                 var self = this;
+                var times = this.options.timerange;
                 var default_time_unit = this.options.default_time_unit;
                 this.time_unit = times[default_time_unit || 0].value;
                 _.forEach(times, function (time, index) {
+                    var timeName = self.options.doI18n?i18n.t(time.name):time.name;
                     var node = $('<li class="' + (index == default_time_unit ? 'active' : '') +
-                        '<a href="javascript:void(0)">' + time.name + '</a></li>');
+                        '<a href="javascript:void(0)">' + timeName + '</a></li>');
                     node.attr('data-value',JSON.stringify(time.value));
                     self.$('.tabs>.nav').append(node);
                 });
+            },
+            setDefaultTimeUnit: function(length){
+                var time_unit = this.setTimeUnit(length,true);
+                this.$('.tabs li').removeClass('active');
+                this.$('.tabs li[data-value=' + time_unit + ']').addClass('active');
+                this.time_unit = time_unit;
             },
             setTimeUnit: function (length, refresh) {
                 var self = this;
@@ -138,11 +164,12 @@ define(
                     if (time_unit == 'hourly')time_unit = 'daily';
                 }
                 if (!refresh)this.changeTimeUnit(time_unit);
+                return time_unit;
             },
             clickTabs: function (e) {
                 if ($(e.currentTarget).hasClass('disabled'))return;
                 var time_unit = $(e.currentTarget).attr('data-value');
-                this.changeTimeUnit(time_unit)
+                this.changeTimeUnit(time_unit);
             },
             changeTimeUnit: function (time_unit) {
                 this.$('.tabs li').removeClass('active');
@@ -155,23 +182,32 @@ define(
                 var stats = $(e.currentTarget).attr('data-value');
                 this.changeStats(stats);
             },
-            //todo change Stats
             changeStats: function (stats) {
                 this.$('.btn-group-stats>.btn').removeClass('active');
                 this.$('.btn-group-stats>.btn[data-value=' + stats + ']').addClass('active');
                 this.stats = stats;
                 this.renderComponent();
             },
+            showLoading: function () {
+                this.$('.view-placeholder').addClass('show');
+                this.$('.view-placeholder>.loading-view').show();
+            },
+            hideLoading: function () {
+                this.$('.view-placeholder').removeClass('show');
+                this.$('svg').show();
+                this.$('.view-placeholder>.loading-view').hide();
+            },
             showNoData: function () {
+                this.$('.view-placeholder').addClass('show');
                 this.$('svg').hide();
-                this.$('.chart-view').append('<div class="no-data-view">No Data To Display</div>');
+                this.$('.view-placeholder>.no-data-view').show();
             },
             hideNoData: function () {
-                this.$('svg').show();
-                this.$('.no-data-view').remove();
+                this.$('.view-placeholder').removeClass('show');
+                this.$('.view-placeholder>.no-data-view').hide();
             },
             clearSeries: function (chart) {
-                if (chart.series.length != 0) {
+                if (chart&&chart.series.length != 0) {
                     do {
                         chart.series[0].remove();
                     }
@@ -183,12 +219,12 @@ define(
                 var stats = this.options.stats;
                 var storeName = this.options.storeName;
                 var chart = self.$('.chart-content').highcharts();
-                this.hideNoData();
-                chart.showLoading();
+                this.showLoading();
                 AppCube.DataRepository.fetchNew(storeName, {
                     end_date: end_moment,
                     is_compared: true
                 }).done(function (res) {
+                    self.hideLoading();
                     var data;
                     var stateFormatter = self.options.stateFormatter;
                     if(typeof stateFormatter=='function'){
@@ -208,15 +244,15 @@ define(
                         };
                     }
                     //todo merge 2 axis
-                    if(chart && chart.hideLoading)
-                        chart.hideLoading();
                     if (data.is_compared && data.stats.length) {
+                        self.hideNoData();
                         if (chart.series && chart.series[0]) {
                             chart.series[0].options.showInLegend = true;
                         }
                         var series = chart.addSeries(data.stats[0]);
                         series.series_type = storeName;
                     } else {
+                        self.showNoData();
                         console.log('No compared data');
                     }
                 });
@@ -224,13 +260,15 @@ define(
             renderChart: function (data) {
                 var self = this;
                 var chart = this.$('.chart-content').highcharts();
-                chart.hideLoading();
+                if(!chart)return;
+                this.hideLoading();
                 if (!data.dates || data.dates.length == 0||_.values(data.dates).length==0) {
                     chart.options.legend.enabled = true;
                     this.clearSeries(chart);
                     this.showNoData();
                     return;
                 } else {
+                    this.hideNoData();
                     this.clearSeries(chart);
                     //calculate interval
                     var length = _.isArray(data.dates)?data.dates.length:_.values(data.dates).length;
@@ -257,11 +295,8 @@ define(
                 var storeName = this.options.storeName;
                 var stateName = this.options.stateName;
                 var chart = this.$('.chart-content').highcharts();
-                this.hideNoData();
-                if(chart){
-                    chart.colorCounter = 0;
-                    chart.showLoading();
-                }
+                this.showLoading();
+                if(chart)chart.colorCounter = 0;
                 AppCube.DataRepository.fetch(storeName, stateName, this.stats).done(function (res) {
                     self.renderChart(res);
                 });
@@ -271,29 +306,16 @@ define(
             },
             render: function () {
                 Marionette.ItemView.prototype.render.call(this);
+                this.$el.i18n();
                 this.$('.chart-content').highcharts(this.options.options);
                 this.initChart();
                 this.refresh();
             },
             refresh: function () {
-                var chart = this.$('.chart-content').highcharts();
                 var storeName = this.options.storeName;
-                this.hideNoData();
-                if (chart)chart.showLoading();
+                this.showLoading();
+                Dispatcher.trigger('startRefresh:'+storeName,{},'Component');
                 AppCube.DataRepository.refresh(storeName);
-            },
-            beforeHide: function () {
-                var eventName = this.options.valueEventName ? ':' + this.options.valueEventName : '';
-                Dispatcher.off('Request.getValue' + eventName, 'Component');
-                Dispatcher.off('change:Time', 'Component');
-                var chart = this.$('.chart-content').highcharts();
-                if (chart)chart.destroy();
-                this.$('.btn-compare').each(function (index, item) {
-                    var dtp = $(item).data('DateTimePicker');
-                    if (dtp) {
-                        dtp.destroy();
-                    }
-                });
             }
         });
     });

@@ -1,6 +1,12 @@
-define(['jquery', 'underscore'], function ($, _) {
+define(['jquery', 'underscore','i18n'], function ($, _,i18n) {
     var defaults = {
-        display_header: true
+        display_header: true,
+        table_class:'',
+        header_class:'',
+        body_class:'',
+        header_cell_class:'',
+        cell_class:'',
+        row_color:false
     };
 
     var AdvancedTable = function (renderTo, data, columns, options) {
@@ -8,10 +14,10 @@ define(['jquery', 'underscore'], function ($, _) {
         if ($(renderTo).length == 0) {
             throw new Error('AdvancedTable: 1st argument must be root');
         } else {
-            this.root = $('<table class="advanced-table">' +
-            '<thead class="advanced-table-header"></thead>' +
-            '<tbody class="advanced-table-body"></tbody>' +
-            '</table>').appendTo($(renderTo));
+            this.root = $('<table class="'+params.table_class+'">' +
+            '<thead class="'+params.header_class+'"></thead>' +
+            '<tbody class="'+params.body_class+'"></tbody>' +
+            '</table>').prependTo($(renderTo));
             this.render(data, columns, params);
         }
 
@@ -46,7 +52,7 @@ define(['jquery', 'underscore'], function ($, _) {
                 var formatter = columnOptions.formatter;
 
                 var content = formatter ? formatter(rid, cid, d[field], columnOptions, d) : d[field];
-                var td = $('<td>' + content + '</td>').appendTo(row).addClass('advanced-table-cell');
+                var td = $('<td>' + content + '</td>').appendTo(row).addClass(params.cell_class);
                 if (className)td.addClass(className);
             }
         }
@@ -61,7 +67,7 @@ define(['jquery', 'underscore'], function ($, _) {
         var head = this.root.children('thead');
         for (var cid in columns) {
             var headColumn = columns[cid];
-            var name = headColumn.name;
+            var name = params.doI18n?i18n.t(headColumn.name):headColumn.name;
             var className = headColumn.cssClass;
             var th = $('<th data-value="' + headColumn.field + '">' + name + (headColumn.sortable ? '<span class="sort-indicator"></span>' : '') + '</th>');
             if (headColumn.sortable)th.addClass('sortable');
@@ -69,7 +75,7 @@ define(['jquery', 'underscore'], function ($, _) {
             if (headColumn.width) {
                 th.attr('width', headColumn.width);
             }
-            th.appendTo(head).addClass('advanced-table-header-cell');
+            th.appendTo(head).addClass(params.header_cell_class);
             if (className)th.addClass(className);
         }
     };

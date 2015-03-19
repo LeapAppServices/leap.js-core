@@ -8,12 +8,13 @@ define(['underscore', 'jquery'], function (_, $) {
             var skip = options.skip;
             var limit = options.limit;
             var order = options.order;
-            if (order) {
+            var sort_field = order.field||data.sort_key||false;
+            if (sort_field) {
                 tmp = _.sortBy(data, function (item) {
-                    return item[order.field];
+                    return item[sort_field];
                 });
-
-                if (order.rule < 0) {
+                var sort_rule = order.rule||-1;
+                if (sort_rule < 0) {
                     tmp = tmp.reverse();
                 }
             } else {

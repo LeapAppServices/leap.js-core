@@ -15,8 +15,8 @@ define(
         return PageTable.extend({
             template: template,
             events: {
-                'change .pageinate select': 'changePerpage',
-                'click .page-btn>.btn': 'changePage',
+                'click .pagination .menu>.item': 'changePerpage',
+                'click .page-btn>.button': 'changePage',
                 'click th.sortable': 'changeSort',
                 'click .open-subtable': 'openSub',
                 'click .close-subtable': 'closeSub'
@@ -24,21 +24,21 @@ define(
             init: function () {
             },
             beforeShow: function () {
-                var eventName = this.options.valueEventName ? ':' + this.options.valueEventName : '';
-                Dispatcher.on('Request.getValue' + eventName, this.getValue, this, 'Component');
+                var eventName = this.options.valueEventName;
+                Dispatcher.on('Request.getValue:' + eventName, this.getValue, this, 'Component');
                 var storeName = this.options.storeName;
                 Dispatcher.on('refresh:' + storeName, this.refreshHandler, this, 'Component');
                 var subStoreName = this.options.subStoreName;
                 Dispatcher.on('refresh:' + subStoreName, this.renderSubComponent, this, 'Component');
             },
             beforeHide: function () {
-                var eventName = this.options.valueEventName ? ':' + this.options.valueEventName : '';
-                Dispatcher.off('Request.getValue' + eventName, 'Component');
+                var eventName = this.options.valueEventName;
+                Dispatcher.off('Request.getValue:' + eventName, 'Component');
                 var subStoreName = this.options.subStoreName;
                 Dispatcher.off('refresh:' + subStoreName, 'Component');
                 var storeName = this.options.storeName;
                 Dispatcher.off('refresh:' + storeName, 'Component');
-                this.table.destroy();
+                if(this.table)this.table.destroy();
             },
             getValue: function () {
                 var limit = this.perpage + 1;
@@ -53,12 +53,12 @@ define(
             showNoData: function () {
                 this.$('.no-data-view').show();
                 this.$('.advanced-table').hide();
-                this.$('.pageinate').hide();
+                this.$('.pagination').hide();
             },
             hideNoData: function () {
                 this.$('.no-data-view').hide();
                 this.$('.advanced-table').show();
-                this.$('.pageinate').show();
+                this.$('.pagination').show();
             },
             renderSubGrid: function (data) {
                 var tmp, end, next;
@@ -89,7 +89,7 @@ define(
             closeSub: function () {
                 this.sub_state = false;
                 this.perpage = this.back_perpage;
-                this.$('.pageinate select').val(this.perpage);
+                this.$('.pagination .ui.dropdown').dropdown('set value',this.perpage);
                 this.page = this.back_page;
                 this.maxPage = this.back_max;
                 this.hideSubGrid();
@@ -109,7 +109,7 @@ define(
                 e.stopPropagation();
             },
             changeSubPerpage: function (e) {
-                var value = this.$('.pageinate select').val();
+                var value = this.$('.pagination .ui.dropdown').dropdown('get value');
                 this.perpage = parseInt(value);
                 this.page = 1;
                 if (!this.options.static_data) {

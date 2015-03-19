@@ -1,6 +1,7 @@
 define([
-    'moment'
-],function(moment){
+    'moment',
+    'i18n'
+],function(moment,i18n){
     return {
         EmptyFormatter:function(row, cell, value, columnDef, dataContext){
             if(typeof value == "undefined"||typeof value == "object"){
@@ -41,10 +42,10 @@ define([
         },
         ACLFormatter:function(row, cell, value, columnDef, dataContext){
             if(typeof value == "undefined"||value == null){
-                return "<div class='btn btn-sm btn-default btn-edit'>Edit</div>";
+                return "<div class='nano ui button edit-acl'>"+i18n.t('common.tag.edit')+"</div>";
             }
             else{
-                return JSON.stringify(value)+"<div class='btn btn-sm btn-default btn-edit'>Edit</div>";
+                return JSON.stringify(value)+"<div class='nano ui button edit-acl'>"+i18n.t('common.tag.edit')+"</div>";
             }
         },
         DateFormatter:function(row, cell, value, columnDef, dataContext) {
@@ -67,15 +68,18 @@ define([
         },
         FileFormatter:function(row, cell, value, columnDef, dataContext) {
             if(typeof value == "undefined"||value == null||!value.url){
-                return "<div class='btn btn-sm btn-default btn-upload'>Upload</div>" +
+                return "<div class='nano ui button btn-upload'>"+i18n.t('common.tag.upload')+"</div>" +
                     "<input type='file' style='display:none'/>" +
-                    "<div class='progress'>" +
-                    "<div class='progress-bar'></div>" +
+
+                    "<div class='ui active small progress' style='display:none'>" +
+                        "<div class='bar'>" +
+                            "<div class='progress'></div>" +
+                        "</div>" +
                     "</div>";
             }
             else{
                 return "<span>"+value.url+"</span>" +
-                    "<div class='btn btn-sm btn-default btn-remove'>Remove</div>";
+                    "<div class='nano ui button btn-remove'>"+i18n.t('common.tag.remove')+"</div>";
             }
         },
         GeoPointFormatter:function(row, cell, value, columnDef, dataContext) {

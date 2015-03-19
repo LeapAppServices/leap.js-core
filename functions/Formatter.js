@@ -67,8 +67,8 @@ define([
                     range--;
                 }
             }
-            res.dates = _.extend({},dates);
-            res.stats = _.extend({},stats);
+            res.dates = dates;
+            res.stats = stats;
             res.chart_name = options.params.start_date+' - '+options.params.end_date;
             return res;
         },
@@ -102,11 +102,20 @@ define([
                 return moment(value,'YYYYMMDDHH').format('YYYY/MM/DD');
             }
         },
+        NormalDateFormat:function(row, cell, value, columnDef, dataContext){
+            return moment(value).format('YYYY/MM/DD HH:mm');
+        },
         StringFormat: function (row, cell, value, columnDef, dataContext) {
             return (typeof value == 'string') ? value : '';
         },
         NumberFormat: function (row, cell, value, columnDef, dataContext) {
             return (typeof value == 'number') ? value : 0;
+        },
+        ActionAllFormat:function(row, cell, value, columnDef, dataContext){
+            return '<i class="action edit icon"></i><i class="action trash icon"></i>';
+        },
+        ActionDeleteFormat:function(row, cell, value, columnDef, dataContext){
+            return '<i class="action trash icon"></i>';
         }
     }
 });

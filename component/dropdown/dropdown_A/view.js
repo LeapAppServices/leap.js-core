@@ -34,8 +34,8 @@ define(
                 Dispatcher.on('refresh:' + storeName, this.renderComponent, this, 'Component');
             },
             beforeShow: function () {
-                var eventName = this.options.valueEventName ? ':' + this.options.valueEventName : '';
-                Dispatcher.on('Request.getValue' + eventName, this.getValue, this, 'Component');
+                var eventName = this.options.valueEventName;
+                Dispatcher.on('Request.getValue:' + eventName, this.getValue, this, 'Component');
             },
             clickItem: function (e) {
                 var value = $(e.currentTarget).attr('data-value');
@@ -130,8 +130,8 @@ define(
             },
             beforeHide: function () {
                 this.$('.dropdown').attr('data-value', '');
-                var eventName = this.options.valueEventName ? ':' + this.options.valueEventName : '';
-                Dispatcher.off('Request.getValue' + eventName, 'Component');
+                var eventName = this.options.valueEventName;
+                Dispatcher.off('Request.getValue:' + eventName, 'Component');
             }
         });
     });

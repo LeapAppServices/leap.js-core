@@ -23,7 +23,7 @@ define(
             beforeShow: function () {
             },
             initGrid: function () {
-                var title = this.options.title;
+                var title = this.options.doI18n?i18n.t(this.options.title):this.options.title;
                 this.$('.caption').html('<span class="app-icon app-icon-close"></span>' + title);
             },
             renderComponent: function () {
@@ -48,7 +48,11 @@ define(
             },
             renderGrid: function (data) {
                 this.hideLoading();
-                if (!data || data.length == 0)this.showNoData();
+                if (!data || data.length == 0){
+                    this.showNoData();
+                }else{
+                    this.hideLoading();
+                }
                 this.grid.setData(data);
                 this.grid.invalidate();
             },
@@ -82,7 +86,6 @@ define(
             refresh: function () {
                 var storeName = this.options.storeName;
                 this.showLoading();
-                this.hideNoData();
                 AppCube.DataRepository.refresh(storeName,this.getValue());
             },
             beforeHide: function () {

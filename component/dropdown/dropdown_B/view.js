@@ -32,8 +32,6 @@ define(
                 "click .dropdown>.btn": "focusInput"
             },
             init: function () {
-                var storeName = this.options.storeName;
-                Dispatcher.on('refresh:' + storeName, this.renderComponent, this, 'Component');
                 var name = this.options.name_key;
                 var value = this.options.value_key;
                 this.childTemplate = _.template('' +
@@ -42,8 +40,10 @@ define(
                 '<span><% if(typeof ' + name + '=="string"){ %><%= ' + name + ' %><% } %></span></label></div></li>');
             },
             beforeShow: function () {
-                var eventName = this.options.valueEventName ? ':' + this.options.valueEventName : '';
-                Dispatcher.on('Request.getValue' + eventName, this.getValue, this, 'Component');
+                var storeName = this.options.storeName;
+                Dispatcher.on('refresh:' + storeName, this.renderComponent, this, 'Component');
+                var eventName = this.options.valueEventName;
+                Dispatcher.on('Request.getValue:' + eventName, this.getValue, this, 'Component');
             },
             checkItem: function (e) {
                 if (!this.options.multi) {
@@ -156,8 +156,10 @@ define(
             },
             beforeHide: function () {
                 this.$('.dropdown').attr('data-value', '');
-                var eventName = this.options.valueEventName ? ':' + this.options.valueEventName : '';
-                Dispatcher.off('Request.getValue' + eventName, 'Component');
+                var eventName = this.options.valueEventName;
+                Dispatcher.off('Request.getValue:' + eventName, 'Component');
+                var storeName = this.options.storeName;
+                Dispatcher.off('refresh:' + storeName, 'Component');
             }
         });
     });

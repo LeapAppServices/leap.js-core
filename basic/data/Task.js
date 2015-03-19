@@ -8,7 +8,7 @@ define([
         'pace'
     ],
     function(CObject,Logger,C,Q,$,_,pace){
-        var defaults = ['params','method','header','url','timeout','formatter','buffer','next'];
+        var defaults = ['params','method','header','url','timeout','formatter','buffer','next','queryUrl'];
         var INIT = 0,PENDING = 1,SUCCESS = 2,ERROR = 3;
 
         var Task = CObject.extend({
@@ -22,6 +22,7 @@ define([
             _configure:function(options){
                 if (this.options) options = _.extend({}, _.result(this, 'options'), options);
                 this.options = _.pick(options, defaults);
+
             },
             start:function(){
                 var data;
@@ -37,6 +38,12 @@ define([
                 var url = this.options.url||'';
                 var timeout = this.options.timeout||C.get('Ajax.TIMEOUT');
                 var header = _.extend({},C.get('Ajax.HTTPHEADER'),this.options.header);
+                
+                if(this.options.queryUrl){
+                    method = 'POST';
+                    url = this.options.queryUrl;
+                }
+
                 try{
                     data = (method.toUpperCase() == 'GET')?params:JSON.stringify(params);
                 }
@@ -72,6 +79,9 @@ define([
                         var tmp_result = self.options.formatter(data,self.options);
                         if(typeof tmp_result.done == 'function'){
                             tmp_result.done(function(res){
+                                self.result = res;
+                                self.defer.resolve(self.result);
+                            },function(res){
                                 self.result = res;
                                 self.defer.resolve(self.result);
                             });

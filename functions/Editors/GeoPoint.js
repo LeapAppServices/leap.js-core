@@ -12,7 +12,8 @@ define([
         _.extend(this,{
             init:function(){
                 scope.input = $('<div class="editor-geopoint container-flex">' +
-                    '<input type="text" class="latitude flex-1"> , ' +
+                    '<input type="text" class="latitude flex-1">' +
+                    '<span style="margin:0 10px">,</span>' +
                     '<input type="text" class="longitude flex-1"></div>')
                     .appendTo(args.container);
                 scope.input.find('.latitude').focus().select();

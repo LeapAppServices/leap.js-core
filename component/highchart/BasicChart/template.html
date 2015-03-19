@@ -15,6 +15,18 @@
     <div class="portlet-body">
         <div class="chart-view">
             <div class="chart-content" style="min-height:300px;"></div>
+            <div class="view-placeholder">
+                <div class="no-data-view" style="display:none">
+                    <div class="empty-icon"></div>
+                    <div class="empty-message" data-i18n="common.title.no-data-view"></div>
+                </div>
+
+                <div class="loading-view" style="display:none">
+                    <div class="ui active inverted dimmer">
+                        <div class="ui large text loader" data-i18n="common.title.loading"></div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

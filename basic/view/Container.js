@@ -90,6 +90,9 @@ define([
                 this._containerRoot = rootNode;
                 this.beforeRenderComponents();
                 this.renderComponents(options);
+                this.afterRenderComponents();
+            },
+            afterRenderComponents: function () {
             },
             clear: function (stateRoot) {
                 this.undelegateEvents();
